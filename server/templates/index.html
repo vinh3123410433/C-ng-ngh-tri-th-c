@@ -18,14 +18,18 @@
 
       <section class="mb-6 grid gap-4 md:grid-cols-5" id="kpi-cards"></section>
 
-      <section class="mb-6 grid gap-4 lg:grid-cols-2">
-        <div class="rounded-2xl bg-white p-4 shadow">
+      <section class="mb-6 grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="rounded-2xl bg-white p-4 shadow min-h-[24rem]">
           <h2 class="mb-3 text-lg font-semibold">FR vs NFR</h2>
-          <canvas id="typeChart" height="180"></canvas>
+          <div class="h-[20rem]">
+            <canvas id="typeChart"></canvas>
+          </div>
         </div>
-        <div class="rounded-2xl bg-white p-4 shadow">
+        <div class="rounded-2xl bg-white p-4 shadow min-h-[24rem]">
           <h2 class="mb-3 text-lg font-semibold">Priority Distribution</h2>
-          <canvas id="priorityChart" height="180"></canvas>
+          <div class="h-[20rem]">
+            <canvas id="priorityChart"></canvas>
+          </div>
         </div>
       </section>
 

@@ -1,77 +1,60 @@
 # Requirements Knowledge Base
 
-A runnable web system to collect, normalize, analyze, and trace software requirements.
+Web app để quản lý requirements, phát hiện conflict, truy vết và xem dashboard.
 
-## Implemented scope
+## Cách dùng nhanh
 
-- Requirements collection for FR and NFR
-- Template normalization: Actor - Action - Object - Constraint
-- Auto parsing from description or manual field input
-- Relationship model with types:
-  - depends_on
-  - conflicts_with
-  - duplicates
-- Conflict detection rule engine loaded from JSON rules file
-- Traceability links:
-  - Requirement -> Test case
-  - Requirement -> Design
-  - Requirement -> Code
-- Dashboard with KPIs and charts
-- Relationship graph visualization
-- Filters by type and priority
-- REST APIs for integration
+### 1) Clone project
 
-## Tech stack (adapted to current environment)
+```powershell
+git clone https://github.com/vinh3123410433/C-ng-ngh-tri-th-c.git
+cd C-ng-ngh-tri-th-c
+```
 
-- Backend: Flask + SQLite
-- Frontend: HTML + Tailwind CDN + vanilla JS
-- Graph visualization: vis-network
-- Charts: Chart.js
-
-## Project structure
-
-- server/app.py: Flask app, API routes, rules engine, DB schema
-- server/templates/index.html: Main UI
-- server/static/js/app.js: Frontend logic
-- server/data/rules.json: Conflict/duplicate rules
-- server/requirements.txt: Python dependency list
-
-## Run locally
-
-1. Install dependency:
+### 2) Cài dependency
 
 ```powershell
 C:/Users/vinh/AppData/Local/Programs/Python/Python311/python.exe -m pip install -r server/requirements.txt
 ```
 
-2. Start server:
+### 3) Chạy ứng dụng
 
 ```powershell
 Set-Location "d:/Công nghệ tri thức/server"
 C:/Users/vinh/AppData/Local/Programs/Python/Python311/python.exe app.py
 ```
 
-3. Open app:
+### 4) Mở trình duyệt
 
-- http://127.0.0.1:5000
+```text
+http://127.0.0.1:5000
+```
 
-## Main APIs
+## Có gì trong app
 
-- POST /api/requirements
-- GET /api/requirements
-- PUT /api/requirements/:id
-- DELETE /api/requirements/:id
-- POST /api/relationships
-- GET /api/requirements/:id/related
-- POST /api/traceability
-- GET /api/traceability/:id
-- GET /api/conflicts
-- GET /api/dashboard
-- GET /api/graph
+- Thêm requirement FR/NFR
+- Tự parse template Actor - Action - Object - Constraint
+- Tự phát hiện conflict và duplicate
+- Tạo relationship và traceability
+- Dashboard, biểu đồ và graph quan hệ
 
-## Notes
+## API chính
 
-- Conflict detection currently includes:
-  - opposite action on same actor + object
-  - incompatible constraints, such as < 2s versus > 5s
-- Derived relationships (conflicts_with, duplicates) are recalculated automatically after requirement updates.
+- `POST /api/requirements`
+- `GET /api/requirements`
+- `PUT /api/requirements/:id`
+- `DELETE /api/requirements/:id`
+- `POST /api/relationships`
+- `GET /api/requirements/:id/related`
+- `POST /api/traceability`
+- `GET /api/traceability/:id`
+- `GET /api/conflicts`
+- `GET /api/dashboard`
+- `GET /api/graph`
+
+## Ghi chú
+
+- Khi mở lần đầu, app tự seed dữ liệu mẫu để UI có sẵn nội dung.
+- Conflict rule hiện tại gồm:
+  - cùng actor + object nhưng action trái nghĩa
+  - constraint mâu thuẫn, ví dụ `< 2s` và `> 5s`

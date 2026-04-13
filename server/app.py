@@ -378,6 +378,8 @@ def get_db() -> sqlite3.Connection:
         db.row_factory = sqlite3.Row
         g.db = db
         init_db(db)
+        seed_demo_data(db)
+        migrate_demo_data(db)
     return db
 
 
@@ -422,6 +424,132 @@ def init_db(db: sqlite3.Connection) -> None:
         """
     )
     db.commit()
+
+
+def seed_demo_data(db: sqlite3.Connection) -> None:
+    existing = db.execute("SELECT COUNT(*) FROM requirements").fetchone()[0]
+    if existing:
+        return
+
+    demo_requirements = [
+        {
+            "id": "REQ-LOGIN-001",
+            "title": "Login response time",
+            "description": "User - login - system - < 2s",
+            "type": "FR",
+            "priority": "high",
+            "source": "user",
+        },
+        {
+            "id": "REQ-LOGIN-002",
+            "title": "Logout response time",
+            "description": "User - logout - system - > 5s",
+            "type": "FR",
+            "priority": "high",
+            "source": "stakeholder",
+        },
+        {
+            "id": "REQ-NFR-001",
+            "title": "System uptime",
+            "description": "System - operate - platform - 99.9% uptime",
+            "type": "NFR",
+            "priority": "medium",
+            "source": "system",
+        },
+        {
+            "id": "REQ-NFR-002",
+            "title": "Duplicate login response time",
+            "description": "User - login - system - < 2s",
+            "type": "NFR",
+            "priority": "low",
+            "source": "user",
+        },
+        {
+            "id": "REQ-DASH-001",
+            "title": "Admin can export reports",
+            "description": "Admin - export - report - within 5s",
+            "type": "FR",
+            "priority": "medium",
+            "source": "stakeholder",
+        },
+    ]
+
+    for item in demo_requirements:
+        normalized = normalize_requirement_payload(item)
+        db.execute(
+            """
+            INSERT INTO requirements (
+                id, title, description, type, priority, source, created_at,
+                actor, action, object_name, constraint_text, conflict_flag
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """,
+            (
+                normalized["id"],
+                normalized["title"],
+                normalized["description"],
+                normalized["type"],
+                normalized["priority"],
+                normalized["source"],
+                normalized["created_at"],
+                normalized["actor"],
+                normalized["action"],
+                normalized["object"],
+                normalized["constraint"],
+            ),
+        )
+
+    db.commit()
+    scan_conflicts_and_duplicates()
+
+    demo_trace_links = [
+        ("REQ-LOGIN-001", "test_case", "TC-LOGIN-01", "Login success under 2 seconds"),
+        ("REQ-LOGIN-001", "design", "DES-SEC-01", "Auth flow design"),
+        ("REQ-DASH-001", "code", "src/routes/report.ts", "Export handler"),
+    ]
+    for requirement_id, trace_type, target_ref, note in demo_trace_links:
+        db.execute(
+            """
+            INSERT INTO trace_links (requirement_id, trace_type, target_ref, note, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (requirement_id, trace_type, target_ref, note, now_iso()),
+        )
+
+    demo_relationships = [
+        ("REQ-LOGIN-001", "REQ-LOGIN-002", "depends_on"),
+        ("REQ-DASH-001", "REQ-NFR-001", "depends_on"),
+    ]
+    for from_req_id, to_req_id, relation_type in demo_relationships:
+        create_relationship_if_missing(from_req_id, to_req_id, relation_type)
+
+    db.commit()
+
+
+def migrate_demo_data(db: sqlite3.Connection) -> None:
+    row = db.execute("SELECT id, action, object_name FROM requirements WHERE id = 'REQ-LOGIN-002'").fetchone()
+    if row and (row["action"] != "logout" or row["object_name"] != "system"):
+        db.execute(
+            """
+            UPDATE requirements
+            SET title = ?, description = ?, type = ?, priority = ?, source = ?,
+                actor = ?, action = ?, object_name = ?, constraint_text = ?, created_at = ?
+            WHERE id = 'REQ-LOGIN-002'
+            """,
+            (
+                "Logout response time",
+                "User - logout - system - > 5s",
+                "FR",
+                "high",
+                "stakeholder",
+                "User",
+                "logout",
+                "system",
+                "> 5s",
+                row["id"] and now_iso(),
+            ),
+        )
+        db.commit()
+        scan_conflicts_and_duplicates()
 
 
 def row_to_requirement(row: sqlite3.Row) -> dict:

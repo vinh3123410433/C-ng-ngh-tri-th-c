@@ -55,6 +55,23 @@ function renderKPIs(dashboard) {
     .join("");
 }
 
+function renderEmptyTableState(message) {
+  document.getElementById("requirementsBody").innerHTML = `
+    <tr>
+      <td class="px-2 py-8 text-center text-slate-500" colspan="7">${message}</td>
+    </tr>
+  `;
+}
+
+function renderEmptyGraphState(message) {
+  const container = document.getElementById("graph");
+  if (graphInstance) {
+    graphInstance.destroy();
+    graphInstance = null;
+  }
+  container.innerHTML = `<div class="flex h-full items-center justify-center text-sm text-slate-500">${message}</div>`;
+}
+
 function renderCharts(dashboard) {
   const typeCtx = document.getElementById("typeChart").getContext("2d");
   const priorityCtx = document.getElementById("priorityChart").getContext("2d");
@@ -122,6 +139,10 @@ async function loadRequirements() {
   const data = await fetchJSON(`${api.requirements}?${query.toString()}`);
 
   const body = document.getElementById("requirementsBody");
+  if (!data.length) {
+    renderEmptyTableState("No requirements found. Demo data will load automatically on first access if the database is empty.");
+    return;
+  }
   body.innerHTML = data.map(requirementRow).join("");
 
   body.querySelectorAll("button[data-delete]").forEach((btn) => {
@@ -150,6 +171,11 @@ function relationColor(type) {
 
 async function loadGraph() {
   const data = await fetchJSON(api.graph);
+  if (!data.nodes.length) {
+    renderEmptyGraphState("No graph data yet");
+    return;
+  }
+
   const nodes = new vis.DataSet(
     data.nodes.map((n) => ({
       id: n.id,
@@ -181,6 +207,7 @@ async function loadGraph() {
   if (graphInstance) {
     graphInstance.destroy();
   }
+  container.innerHTML = "";
   graphInstance = new vis.Network(container, { nodes, edges }, options);
 }
 
