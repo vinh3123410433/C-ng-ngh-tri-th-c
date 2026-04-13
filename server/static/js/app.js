@@ -5,6 +5,7 @@ const api = {
   traceability: "/api/traceability",
   dashboard: "/api/dashboard",
   graph: "/api/graph",
+  resetDemo: "/api/demo/reset",
 };
 
 let typeChart;
@@ -35,11 +36,11 @@ async function fetchJSON(url, options = {}) {
 
 function renderKPIs(dashboard) {
   const cards = [
-    ["Total Requirements", dashboard.total_requirements, "bg-cyan-600"],
+    ["Tổng yêu cầu", dashboard.total_requirements, "bg-cyan-600"],
     ["FR", dashboard.fr, "bg-blue-600"],
     ["NFR", dashboard.nfr, "bg-indigo-600"],
-    ["Conflicts", dashboard.conflicts, "bg-rose-600"],
-    ["Duplicates", dashboard.duplicates, "bg-amber-600"],
+    ["Xung đột", dashboard.conflicts, "bg-rose-600"],
+    ["Trùng lặp", dashboard.duplicates, "bg-amber-600"],
   ];
 
   const root = document.getElementById("kpi-cards");
@@ -61,6 +62,20 @@ function renderEmptyTableState(message) {
       <td class="px-2 py-8 text-center text-slate-500" colspan="7">${message}</td>
     </tr>
   `;
+}
+
+function priorityLabel(priority) {
+  if (priority === "low") return "Thấp";
+  if (priority === "medium") return "Trung bình";
+  if (priority === "high") return "Cao";
+  return priority;
+}
+
+function sourceLabel(source) {
+  if (source === "user") return "Người dùng";
+  if (source === "stakeholder") return "Bên liên quan";
+  if (source === "system") return "Hệ thống";
+  return source;
 }
 
 function renderEmptyGraphState(message) {
@@ -94,9 +109,9 @@ function renderCharts(dashboard) {
   priorityChart = new Chart(priorityCtx, {
     type: "bar",
     data: {
-      labels: ["low", "medium", "high"],
+      labels: ["Thấp", "Trung bình", "Cao"],
       datasets: [{
-        label: "Requirements",
+        label: "Số lượng yêu cầu",
         data: [
           dashboard.priority.low || 0,
           dashboard.priority.medium || 0,
@@ -120,11 +135,11 @@ function requirementRow(req) {
       <td class="px-2 py-2 font-mono text-xs">${req.id}</td>
       <td class="px-2 py-2">${req.title}</td>
       <td class="px-2 py-2">${req.type}</td>
-      <td class="px-2 py-2">${req.priority}</td>
+      <td class="px-2 py-2">${priorityLabel(req.priority)}</td>
       <td class="px-2 py-2 text-xs">${template}</td>
-      <td class="px-2 py-2">${req.conflict_flag ? "Yes" : "No"}</td>
+      <td class="px-2 py-2">${req.conflict_flag ? "Có" : "Không"}</td>
       <td class="px-2 py-2">
-        <button class="rounded bg-rose-600 px-2 py-1 text-xs text-white" data-delete="${req.id}">Delete</button>
+        <button class="rounded bg-rose-600 px-2 py-1 text-xs text-white" data-delete="${req.id}">Xóa</button>
       </td>
     </tr>
   `;
@@ -140,7 +155,7 @@ async function loadRequirements() {
 
   const body = document.getElementById("requirementsBody");
   if (!data.length) {
-    renderEmptyTableState("No requirements found. Demo data will load automatically on first access if the database is empty.");
+    renderEmptyTableState("Chưa có requirement. Dữ liệu mẫu sẽ được nạp tự động khi CSDL rỗng.");
     return;
   }
   body.innerHTML = data.map(requirementRow).join("");
@@ -172,14 +187,20 @@ function relationColor(type) {
 async function loadGraph() {
   const data = await fetchJSON(api.graph);
   if (!data.nodes.length) {
-    renderEmptyGraphState("No graph data yet");
+    renderEmptyGraphState("Chưa có dữ liệu đồ thị");
     return;
   }
+
+  const compactTitle = (text, max = 26) => {
+    if (!text) return "";
+    return text.length > max ? `${text.slice(0, max)}...` : text;
+  };
 
   const nodes = new vis.DataSet(
     data.nodes.map((n) => ({
       id: n.id,
-      label: `${n.id}\n${n.title}`,
+      label: `${n.id}\n${compactTitle(n.title)}`,
+      title: `${n.id} - ${n.title}`,
       color: n.conflict_flag ? "#fecaca" : n.type === "FR" ? "#bfdbfe" : "#bbf7d0",
       shape: "box",
       margin: 8,
@@ -193,15 +214,36 @@ async function loadGraph() {
       to: e.target,
       arrows: "to",
       label: e.relation_type,
+      title: `${e.source} ${e.relation_type} ${e.target}`,
       color: relationColor(e.relation_type),
     }))
   );
 
   const container = document.getElementById("graph");
   const options = {
-    physics: { stabilization: false },
-    nodes: { font: { size: 12 } },
-    edges: { font: { align: "middle", size: 10 } },
+    layout: {
+      improvedLayout: true,
+      randomSeed: 7,
+    },
+    physics: {
+      stabilization: true,
+      barnesHut: {
+        springLength: 200,
+        springConstant: 0.035,
+      },
+    },
+    nodes: {
+      font: { size: 11, face: "Tahoma" },
+      widthConstraint: { maximum: 170 },
+    },
+    edges: {
+      font: { align: "middle", size: 9, strokeWidth: 2, strokeColor: "#ffffff" },
+      smooth: { enabled: true, type: "dynamic" },
+    },
+    interaction: {
+      hover: true,
+      tooltipDelay: 150,
+    },
   };
 
   if (graphInstance) {
@@ -225,10 +267,11 @@ function renderTraceTree(data) {
     <div>
       <p><strong>${data.requirement.id}</strong> - ${data.requirement.title}</p>
       <p class="text-xs text-slate-500">${data.requirement.actor || "?"} - ${data.requirement.action || "?"} - ${data.requirement.object || "?"} - ${data.requirement.constraint || "?"}</p>
-      <h3 class="mt-3 font-semibold">Trace Links</h3>
-      <ul class="list-disc pl-5">${links || "<li>No trace links</li>"}</ul>
-      <h3 class="mt-3 font-semibold">Relationships</h3>
-      <ul class="list-disc pl-5">${rels || "<li>No relationships</li>"}</ul>
+      <p class="mt-1 text-xs text-slate-500">Nguồn: ${sourceLabel(data.requirement.source)}, Ưu tiên: ${priorityLabel(data.requirement.priority)}</p>
+      <h3 class="mt-3 font-semibold">Liên kết truy vết</h3>
+      <ul class="list-disc pl-5">${links || "<li>Chưa có liên kết truy vết</li>"}</ul>
+      <h3 class="mt-3 font-semibold">Quan hệ</h3>
+      <ul class="list-disc pl-5">${rels || "<li>Chưa có quan hệ</li>"}</ul>
     </div>
   `;
 }
@@ -251,7 +294,7 @@ function bindEvents() {
         body: JSON.stringify(data),
       });
       e.target.reset();
-      setMessage("requirementMessage", "Requirement saved successfully.");
+      setMessage("requirementMessage", "Đã lưu requirement thành công.");
       await refreshAll();
     } catch (err) {
       setMessage("requirementMessage", err.message, false);
@@ -261,7 +304,7 @@ function bindEvents() {
   document.getElementById("scanConflictBtn").addEventListener("click", async () => {
     try {
       const data = await fetchJSON(api.conflicts);
-      setMessage("requirementMessage", `Scanned. Conflicts: ${data.report.conflict_pairs_detected}, Duplicates: ${data.report.duplicate_pairs_detected}`);
+      setMessage("requirementMessage", `Đã quét xong. Xung đột: ${data.report.conflict_pairs_detected}, Trùng lặp: ${data.report.duplicate_pairs_detected}`);
       await refreshAll();
     } catch (err) {
       setMessage("requirementMessage", err.message, false);
@@ -281,7 +324,7 @@ function bindEvents() {
         body: JSON.stringify(data),
       });
       e.target.reset();
-      setMessage("relationshipMessage", "Relationship saved.");
+      setMessage("relationshipMessage", "Đã lưu quan hệ.");
       await refreshAll();
     } catch (err) {
       setMessage("relationshipMessage", err.message, false);
@@ -297,7 +340,7 @@ function bindEvents() {
         body: JSON.stringify(data),
       });
       e.target.reset();
-      setMessage("traceMessage", "Trace link saved.");
+      setMessage("traceMessage", "Đã lưu liên kết truy vết.");
     } catch (err) {
       setMessage("traceMessage", err.message, false);
     }
@@ -311,6 +354,21 @@ function bindEvents() {
       renderTraceTree(data);
     } catch (err) {
       document.getElementById("traceTree").innerHTML = `<p class='text-rose-600'>${err.message}</p>`;
+    }
+  });
+
+  document.getElementById("resetDemoBtn").addEventListener("click", async () => {
+    try {
+      const data = await fetchJSON(api.resetDemo, {
+        method: "POST",
+      });
+      setMessage("demoMessage", "Đã reset dữ liệu mẫu. Bạn có thể demo lại từ đầu.");
+      if (data?.message) {
+        setMessage("requirementMessage", "Dữ liệu demo đã được nạp lại.");
+      }
+      await refreshAll();
+    } catch (err) {
+      setMessage("demoMessage", err.message, false);
     }
   });
 }

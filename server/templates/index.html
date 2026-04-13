@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Requirements Knowledge Base</title>
+    <title>Kho Tri Thức Yêu Cầu Phần Mềm</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
@@ -12,21 +12,35 @@
   <body class="min-h-screen bg-slate-100 text-slate-800">
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <header class="mb-6 rounded-2xl bg-gradient-to-r from-cyan-700 via-sky-600 to-blue-700 p-6 text-white shadow-lg">
-        <h1 class="text-2xl font-bold sm:text-3xl">Requirements Knowledge Base</h1>
-        <p class="mt-2 text-sm sm:text-base">Collect, normalize, detect conflicts, trace, and visualize requirement knowledge.</p>
+        <div class="mb-2 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">Bản cho người Việt sử dụng</div>
+        <h1 class="text-2xl font-bold sm:text-3xl">Kho Tri Thức Yêu Cầu Phần Mềm</h1>
+        <p class="mt-2 text-sm sm:text-base">Thu thập, chuẩn hóa, phát hiện xung đột, truy vết và trực quan hóa yêu cầu.</p>
       </header>
 
       <section class="mb-6 grid gap-4 md:grid-cols-5" id="kpi-cards"></section>
 
+      <section class="mb-6 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-cyan-900">Kịch bản demo nhanh (nộp bài)</h2>
+            <p class="text-sm text-cyan-800">1) Quét xung đột, 2) mở đồ thị quan hệ, 3) tra cứu truy vết bằng ID như REQ-LOGIN-001.</p>
+          </div>
+          <button id="resetDemoBtn" type="button" class="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-800">
+            Reset dữ liệu mẫu
+          </button>
+        </div>
+        <p id="demoMessage" class="mt-2 text-sm"></p>
+      </section>
+
       <section class="mb-6 grid gap-4 lg:grid-cols-2 lg:items-start">
         <div class="rounded-2xl bg-white p-4 shadow min-h-[24rem]">
-          <h2 class="mb-3 text-lg font-semibold">FR vs NFR</h2>
+          <h2 class="mb-3 text-lg font-semibold">Tỷ lệ FR và NFR</h2>
           <div class="h-[20rem]">
             <canvas id="typeChart"></canvas>
           </div>
         </div>
         <div class="rounded-2xl bg-white p-4 shadow min-h-[24rem]">
-          <h2 class="mb-3 text-lg font-semibold">Priority Distribution</h2>
+          <h2 class="mb-3 text-lg font-semibold">Phân bố mức độ ưu tiên</h2>
           <div class="h-[20rem]">
             <canvas id="priorityChart"></canvas>
           </div>
@@ -35,69 +49,69 @@
 
       <section class="mb-6 grid gap-4 lg:grid-cols-3">
         <form id="requirementForm" class="rounded-2xl bg-white p-4 shadow lg:col-span-2">
-          <h2 class="mb-3 text-lg font-semibold">Requirement Input</h2>
+          <h2 class="mb-3 text-lg font-semibold">Nhập Yêu Cầu</h2>
           <div class="grid gap-3 sm:grid-cols-2">
-            <input name="id" placeholder="ID (optional, ex: REQ-001)" class="rounded-lg border px-3 py-2" />
-            <input name="title" placeholder="Title" required class="rounded-lg border px-3 py-2" />
-            <textarea name="description" placeholder="Description" required class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
+            <input name="id" placeholder="ID (không bắt buộc, vd: REQ-001)" class="rounded-lg border px-3 py-2" />
+            <input name="title" placeholder="Tiêu đề" required class="rounded-lg border px-3 py-2" />
+            <textarea name="description" placeholder="Mô tả" required class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
             <select name="type" class="rounded-lg border px-3 py-2">
               <option value="FR">FR</option>
               <option value="NFR">NFR</option>
             </select>
             <select name="priority" class="rounded-lg border px-3 py-2">
-              <option value="low">low</option>
-              <option value="medium" selected>medium</option>
-              <option value="high">high</option>
+              <option value="low">Thấp</option>
+              <option value="medium" selected>Trung bình</option>
+              <option value="high">Cao</option>
             </select>
             <select name="source" class="rounded-lg border px-3 py-2">
-              <option value="user">user</option>
-              <option value="stakeholder">stakeholder</option>
-              <option value="system">system</option>
+              <option value="user">Người dùng</option>
+              <option value="stakeholder">Bên liên quan</option>
+              <option value="system">Hệ thống</option>
             </select>
-            <input name="actor" placeholder="Actor (optional)" class="rounded-lg border px-3 py-2" />
-            <input name="action" placeholder="Action (optional)" class="rounded-lg border px-3 py-2" />
-            <input name="object" placeholder="Object (optional)" class="rounded-lg border px-3 py-2" />
-            <input name="constraint" placeholder="Constraint (optional, ex: < 2s)" class="rounded-lg border px-3 py-2" />
+            <input name="actor" placeholder="Actor (không bắt buộc)" class="rounded-lg border px-3 py-2" />
+            <input name="action" placeholder="Action (không bắt buộc)" class="rounded-lg border px-3 py-2" />
+            <input name="object" placeholder="Object (không bắt buộc)" class="rounded-lg border px-3 py-2" />
+            <input name="constraint" placeholder="Ràng buộc (không bắt buộc, vd: < 2s)" class="rounded-lg border px-3 py-2" />
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
-            <button class="rounded-lg bg-blue-600 px-4 py-2 text-white" type="submit">Save Requirement</button>
-            <button class="rounded-lg bg-slate-200 px-4 py-2" type="button" id="scanConflictBtn">Scan Conflicts</button>
+            <button class="rounded-lg bg-blue-600 px-4 py-2 text-white" type="submit">Lưu Yêu Cầu</button>
+            <button class="rounded-lg bg-slate-200 px-4 py-2" type="button" id="scanConflictBtn">Quét Xung Đột</button>
           </div>
           <p id="requirementMessage" class="mt-2 text-sm"></p>
         </form>
 
         <div class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Filters</h2>
+          <h2 class="mb-3 text-lg font-semibold">Bộ Lọc</h2>
           <div class="grid gap-3">
             <select id="filterType" class="rounded-lg border px-3 py-2">
-              <option value="">All types</option>
+              <option value="">Tất cả loại</option>
               <option value="FR">FR</option>
               <option value="NFR">NFR</option>
             </select>
             <select id="filterPriority" class="rounded-lg border px-3 py-2">
-              <option value="">All priorities</option>
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
+              <option value="">Tất cả mức độ</option>
+              <option value="low">Thấp</option>
+              <option value="medium">Trung bình</option>
+              <option value="high">Cao</option>
             </select>
-            <button id="applyFilterBtn" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-white">Apply</button>
+            <button id="applyFilterBtn" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-white">Áp dụng</button>
           </div>
         </div>
       </section>
 
       <section class="mb-6 rounded-2xl bg-white p-4 shadow">
-        <h2 class="mb-3 text-lg font-semibold">Requirements List</h2>
+        <h2 class="mb-3 text-lg font-semibold">Danh Sách Yêu Cầu</h2>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
               <tr class="border-b bg-slate-50 text-left">
                 <th class="px-2 py-2">ID</th>
-                <th class="px-2 py-2">Title</th>
-                <th class="px-2 py-2">Type</th>
-                <th class="px-2 py-2">Priority</th>
-                <th class="px-2 py-2">Template (Actor-Action-Object-Constraint)</th>
-                <th class="px-2 py-2">Conflict</th>
-                <th class="px-2 py-2">Actions</th>
+                <th class="px-2 py-2">Tiêu đề</th>
+                <th class="px-2 py-2">Loại</th>
+                <th class="px-2 py-2">Ưu tiên</th>
+                <th class="px-2 py-2">Mau (Actor-Action-Object-Constraint)</th>
+                <th class="px-2 py-2">Xung đột</th>
+                <th class="px-2 py-2">Thao tác</th>
               </tr>
             </thead>
             <tbody id="requirementsBody"></tbody>
@@ -107,32 +121,32 @@
 
       <section class="mb-6 grid gap-4 lg:grid-cols-2">
         <form id="relationshipForm" class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Add Relationship</h2>
+          <h2 class="mb-3 text-lg font-semibold">Thêm Quan Hệ</h2>
           <div class="grid gap-3 sm:grid-cols-2">
-            <input name="from_req_id" required placeholder="From requirement ID" class="rounded-lg border px-3 py-2" />
-            <input name="to_req_id" required placeholder="To requirement ID" class="rounded-lg border px-3 py-2" />
+            <input name="from_req_id" required placeholder="ID requirement nguồn" class="rounded-lg border px-3 py-2" />
+            <input name="to_req_id" required placeholder="ID requirement đích" class="rounded-lg border px-3 py-2" />
             <select name="relation_type" class="rounded-lg border px-3 py-2 sm:col-span-2">
               <option value="depends_on">depends_on</option>
               <option value="conflicts_with">conflicts_with</option>
               <option value="duplicates">duplicates</option>
             </select>
-            <button class="rounded-lg bg-emerald-600 px-4 py-2 text-white sm:col-span-2" type="submit">Save Relationship</button>
+            <button class="rounded-lg bg-emerald-600 px-4 py-2 text-white sm:col-span-2" type="submit">Lưu Quan Hệ</button>
           </div>
           <p id="relationshipMessage" class="mt-2 text-sm"></p>
         </form>
 
         <form id="traceForm" class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Add Traceability</h2>
+          <h2 class="mb-3 text-lg font-semibold">Thêm Truy Vết</h2>
           <div class="grid gap-3 sm:grid-cols-2">
-            <input name="requirement_id" required placeholder="Requirement ID" class="rounded-lg border px-3 py-2 sm:col-span-2" />
+            <input name="requirement_id" required placeholder="ID requirement" class="rounded-lg border px-3 py-2 sm:col-span-2" />
             <select name="trace_type" class="rounded-lg border px-3 py-2">
               <option value="test_case">test_case</option>
               <option value="design">design</option>
               <option value="code">code</option>
             </select>
-            <input name="target_ref" required placeholder="Reference (TC-001, design url, file path)" class="rounded-lg border px-3 py-2" />
-            <textarea name="note" placeholder="Note" class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
-            <button class="rounded-lg bg-orange-600 px-4 py-2 text-white sm:col-span-2" type="submit">Save Trace Link</button>
+            <input name="target_ref" required placeholder="Tham chiếu (TC-001, design url, file path)" class="rounded-lg border px-3 py-2" />
+            <textarea name="note" placeholder="Ghi chú" class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
+            <button class="rounded-lg bg-orange-600 px-4 py-2 text-white sm:col-span-2" type="submit">Lưu Liên Kết Truy Vết</button>
           </div>
           <p id="traceMessage" class="mt-2 text-sm"></p>
         </form>
@@ -140,15 +154,15 @@
 
       <section class="mb-6 grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Relationship Graph</h2>
+          <h2 class="mb-3 text-lg font-semibold">Đồ Thị Quan Hệ</h2>
           <div id="graph" class="h-[360px] rounded-lg border"></div>
         </div>
 
         <div class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Traceability Viewer</h2>
+          <h2 class="mb-3 text-lg font-semibold">Xem Truy Vết</h2>
           <div class="mb-3 flex gap-2">
-            <input id="traceLookupId" placeholder="Requirement ID" class="w-full rounded-lg border px-3 py-2" />
-            <button id="traceLookupBtn" class="rounded-lg bg-slate-700 px-4 py-2 text-white" type="button">View</button>
+            <input id="traceLookupId" placeholder="Nhập ID requirement" class="w-full rounded-lg border px-3 py-2" />
+            <button id="traceLookupBtn" class="rounded-lg bg-slate-700 px-4 py-2 text-white" type="button">Xem</button>
           </div>
           <div id="traceTree" class="max-h-[300px] overflow-auto rounded-lg border p-3 text-sm"></div>
         </div>

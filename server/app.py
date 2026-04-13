@@ -65,6 +65,12 @@ def create_app() -> Flask:
     def index():
         return render_template("index.html")
 
+    @app.post("/api/demo/reset")
+    def reset_demo():
+        db = get_db()
+        reset_demo_data(db)
+        return jsonify({"message": "Demo data has been reset."}), 200
+
     @app.post("/api/requirements")
     def create_requirement():
         payload = request.get_json(silent=True) or {}
@@ -499,6 +505,14 @@ def seed_demo_data(db: sqlite3.Connection) -> None:
         )
 
     db.commit()
+
+
+def reset_demo_data(db: sqlite3.Connection) -> None:
+    db.execute("DELETE FROM trace_links")
+    db.execute("DELETE FROM relationships")
+    db.execute("DELETE FROM requirements")
+    db.commit()
+    seed_demo_data(db)
     scan_conflicts_and_duplicates()
 
     demo_trace_links = [
