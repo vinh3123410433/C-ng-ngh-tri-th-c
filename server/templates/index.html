@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Requirements Knowledge Base</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body class="min-h-screen bg-slate-100 text-slate-800">
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <header class="mb-6 rounded-2xl bg-gradient-to-r from-cyan-700 via-sky-600 to-blue-700 p-6 text-white shadow-lg">
+        <h1 class="text-2xl font-bold sm:text-3xl">Requirements Knowledge Base</h1>
+        <p class="mt-2 text-sm sm:text-base">Collect, normalize, detect conflicts, trace, and visualize requirement knowledge.</p>
+      </header>
+
+      <section class="mb-6 grid gap-4 md:grid-cols-5" id="kpi-cards"></section>
+
+      <section class="mb-6 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">FR vs NFR</h2>
+          <canvas id="typeChart" height="180"></canvas>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Priority Distribution</h2>
+          <canvas id="priorityChart" height="180"></canvas>
+        </div>
+      </section>
+
+      <section class="mb-6 grid gap-4 lg:grid-cols-3">
+        <form id="requirementForm" class="rounded-2xl bg-white p-4 shadow lg:col-span-2">
+          <h2 class="mb-3 text-lg font-semibold">Requirement Input</h2>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <input name="id" placeholder="ID (optional, ex: REQ-001)" class="rounded-lg border px-3 py-2" />
+            <input name="title" placeholder="Title" required class="rounded-lg border px-3 py-2" />
+            <textarea name="description" placeholder="Description" required class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
+            <select name="type" class="rounded-lg border px-3 py-2">
+              <option value="FR">FR</option>
+              <option value="NFR">NFR</option>
+            </select>
+            <select name="priority" class="rounded-lg border px-3 py-2">
+              <option value="low">low</option>
+              <option value="medium" selected>medium</option>
+              <option value="high">high</option>
+            </select>
+            <select name="source" class="rounded-lg border px-3 py-2">
+              <option value="user">user</option>
+              <option value="stakeholder">stakeholder</option>
+              <option value="system">system</option>
+            </select>
+            <input name="actor" placeholder="Actor (optional)" class="rounded-lg border px-3 py-2" />
+            <input name="action" placeholder="Action (optional)" class="rounded-lg border px-3 py-2" />
+            <input name="object" placeholder="Object (optional)" class="rounded-lg border px-3 py-2" />
+            <input name="constraint" placeholder="Constraint (optional, ex: < 2s)" class="rounded-lg border px-3 py-2" />
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button class="rounded-lg bg-blue-600 px-4 py-2 text-white" type="submit">Save Requirement</button>
+            <button class="rounded-lg bg-slate-200 px-4 py-2" type="button" id="scanConflictBtn">Scan Conflicts</button>
+          </div>
+          <p id="requirementMessage" class="mt-2 text-sm"></p>
+        </form>
+
+        <div class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Filters</h2>
+          <div class="grid gap-3">
+            <select id="filterType" class="rounded-lg border px-3 py-2">
+              <option value="">All types</option>
+              <option value="FR">FR</option>
+              <option value="NFR">NFR</option>
+            </select>
+            <select id="filterPriority" class="rounded-lg border px-3 py-2">
+              <option value="">All priorities</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+            <button id="applyFilterBtn" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-white">Apply</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-6 rounded-2xl bg-white p-4 shadow">
+        <h2 class="mb-3 text-lg font-semibold">Requirements List</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="border-b bg-slate-50 text-left">
+                <th class="px-2 py-2">ID</th>
+                <th class="px-2 py-2">Title</th>
+                <th class="px-2 py-2">Type</th>
+                <th class="px-2 py-2">Priority</th>
+                <th class="px-2 py-2">Template (Actor-Action-Object-Constraint)</th>
+                <th class="px-2 py-2">Conflict</th>
+                <th class="px-2 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requirementsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mb-6 grid gap-4 lg:grid-cols-2">
+        <form id="relationshipForm" class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Add Relationship</h2>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <input name="from_req_id" required placeholder="From requirement ID" class="rounded-lg border px-3 py-2" />
+            <input name="to_req_id" required placeholder="To requirement ID" class="rounded-lg border px-3 py-2" />
+            <select name="relation_type" class="rounded-lg border px-3 py-2 sm:col-span-2">
+              <option value="depends_on">depends_on</option>
+              <option value="conflicts_with">conflicts_with</option>
+              <option value="duplicates">duplicates</option>
+            </select>
+            <button class="rounded-lg bg-emerald-600 px-4 py-2 text-white sm:col-span-2" type="submit">Save Relationship</button>
+          </div>
+          <p id="relationshipMessage" class="mt-2 text-sm"></p>
+        </form>
+
+        <form id="traceForm" class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Add Traceability</h2>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <input name="requirement_id" required placeholder="Requirement ID" class="rounded-lg border px-3 py-2 sm:col-span-2" />
+            <select name="trace_type" class="rounded-lg border px-3 py-2">
+              <option value="test_case">test_case</option>
+              <option value="design">design</option>
+              <option value="code">code</option>
+            </select>
+            <input name="target_ref" required placeholder="Reference (TC-001, design url, file path)" class="rounded-lg border px-3 py-2" />
+            <textarea name="note" placeholder="Note" class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
+            <button class="rounded-lg bg-orange-600 px-4 py-2 text-white sm:col-span-2" type="submit">Save Trace Link</button>
+          </div>
+          <p id="traceMessage" class="mt-2 text-sm"></p>
+        </form>
+      </section>
+
+      <section class="mb-6 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Relationship Graph</h2>
+          <div id="graph" class="h-[360px] rounded-lg border"></div>
+        </div>
+
+        <div class="rounded-2xl bg-white p-4 shadow">
+          <h2 class="mb-3 text-lg font-semibold">Traceability Viewer</h2>
+          <div class="mb-3 flex gap-2">
+            <input id="traceLookupId" placeholder="Requirement ID" class="w-full rounded-lg border px-3 py-2" />
+            <button id="traceLookupBtn" class="rounded-lg bg-slate-700 px-4 py-2 text-white" type="button">View</button>
+          </div>
+          <div id="traceTree" class="max-h-[300px] overflow-auto rounded-lg border p-3 text-sm"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

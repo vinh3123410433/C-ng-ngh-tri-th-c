@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+server/data/requirements.db
+server/data/*.db
+node_modules/
+.DS_Store
