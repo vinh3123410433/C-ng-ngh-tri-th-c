@@ -11,11 +11,18 @@
   </head>
   <body class="min-h-screen bg-slate-100 text-slate-800">
     <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div id="globalNotice" class="mb-4 hidden rounded-xl border px-4 py-3 text-sm"></div>
+
       <header class="mb-6 rounded-2xl bg-gradient-to-r from-cyan-700 via-sky-600 to-blue-700 p-6 text-white shadow-lg">
         <div class="mb-2 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">Bản cho người Việt sử dụng</div>
         <h1 class="text-2xl font-bold sm:text-3xl">Kho Tri Thức Yêu Cầu Phần Mềm</h1>
         <p class="mt-2 text-sm sm:text-base">Thu thập, chuẩn hóa, phát hiện xung đột, truy vết và trực quan hóa yêu cầu.</p>
       </header>
+
+      <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="text-base font-semibold">Bắt đầu nhanh</h2>
+        <p class="mt-1 text-sm text-slate-600">1) Nhập yêu cầu mới, 2) bấm Quét Xung Đột, 3) mở Đồ Thị Quan Hệ hoặc Xem Truy Vết theo ID.</p>
+      </section>
 
       <section class="mb-6 grid gap-4 md:grid-cols-5" id="kpi-cards"></section>
 
@@ -50,10 +57,11 @@
       <section class="mb-6 grid gap-4 lg:grid-cols-3">
         <form id="requirementForm" class="rounded-2xl bg-white p-4 shadow lg:col-span-2">
           <h2 class="mb-3 text-lg font-semibold">Nhập Yêu Cầu</h2>
+          <p class="mb-3 text-sm text-slate-600">Các trường có dấu * là bắt buộc. Nếu bỏ trống ID, hệ thống sẽ tự tạo.</p>
           <div class="grid gap-3 sm:grid-cols-2">
             <input name="id" placeholder="ID (không bắt buộc, vd: REQ-001)" class="rounded-lg border px-3 py-2" />
-            <input name="title" placeholder="Tiêu đề" required class="rounded-lg border px-3 py-2" />
-            <textarea name="description" placeholder="Mô tả" required class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
+            <input name="title" placeholder="Tiêu đề *" required class="rounded-lg border px-3 py-2" />
+            <textarea name="description" placeholder="Mô tả *" required class="rounded-lg border px-3 py-2 sm:col-span-2"></textarea>
             <select name="type" class="rounded-lg border px-3 py-2">
               <option value="FR">FR</option>
               <option value="NFR">NFR</option>
@@ -94,7 +102,12 @@
               <option value="medium">Trung bình</option>
               <option value="high">Cao</option>
             </select>
-            <button id="applyFilterBtn" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-white">Áp dụng</button>
+            <input id="filterKeyword" placeholder="Tìm nhanh theo ID / tiêu đề" class="rounded-lg border px-3 py-2" />
+            <div class="flex gap-2">
+              <button id="applyFilterBtn" type="button" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-white">Áp dụng</button>
+              <button id="clearFilterBtn" type="button" class="w-full rounded-lg bg-slate-200 px-4 py-2">Xóa lọc</button>
+            </div>
+            <p id="filterResultInfo" class="text-xs text-slate-500"></p>
           </div>
         </div>
       </section>
@@ -109,7 +122,7 @@
                 <th class="px-2 py-2">Tiêu đề</th>
                 <th class="px-2 py-2">Loại</th>
                 <th class="px-2 py-2">Ưu tiên</th>
-                <th class="px-2 py-2">Mau (Actor-Action-Object-Constraint)</th>
+                <th class="px-2 py-2">Mẫu (Actor-Action-Object-Constraint)</th>
                 <th class="px-2 py-2">Xung đột</th>
                 <th class="px-2 py-2">Thao tác</th>
               </tr>
@@ -155,16 +168,18 @@
       <section class="mb-6 grid gap-4 lg:grid-cols-2">
         <div class="rounded-2xl bg-white p-4 shadow">
           <h2 class="mb-3 text-lg font-semibold">Đồ Thị Quan Hệ</h2>
+          <p class="mb-2 text-xs text-slate-500">Màu đỏ nhạt: có xung đột, xanh dương: FR, xanh lá: NFR.</p>
           <div id="graph" class="h-[360px] rounded-lg border"></div>
         </div>
 
         <div class="rounded-2xl bg-white p-4 shadow">
           <h2 class="mb-3 text-lg font-semibold">Xem Truy Vết</h2>
+          <p class="mb-2 text-xs text-slate-500">Nhập ID (ví dụ: REQ-LOGIN-001) rồi bấm Xem hoặc Enter.</p>
           <div class="mb-3 flex gap-2">
             <input id="traceLookupId" placeholder="Nhập ID requirement" class="w-full rounded-lg border px-3 py-2" />
             <button id="traceLookupBtn" class="rounded-lg bg-slate-700 px-4 py-2 text-white" type="button">Xem</button>
           </div>
-          <div id="traceTree" class="max-h-[300px] overflow-auto rounded-lg border p-3 text-sm"></div>
+          <div id="traceTree" class="max-h-[300px] overflow-auto rounded-lg border p-3 text-sm text-slate-500">Chưa có dữ liệu truy vết. Hãy nhập ID để tra cứu.</div>
         </div>
       </section>
     </main>

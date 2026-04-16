@@ -753,9 +753,29 @@ def remove_derived_relationships() -> None:
     db.commit()
 
 
+def resolve_enabled_rules(rules: list[dict]) -> set[str]:
+    enabled = set()
+    for rule in rules:
+        rule_id = (rule.get("id") or "").strip().lower()
+        condition = (rule.get("condition") or "").strip().lower()
+
+        if rule_id == "conflict_opposite_action" or condition == "same_actor_and_object_and_opposite_action":
+            enabled.add("conflict_opposite_action")
+        elif rule_id == "conflict_constraint_non_overlap" or condition == "same_actor_and_object_and_non_overlapping_constraints":
+            enabled.add("conflict_constraint_non_overlap")
+        elif rule_id == "duplicate_same_template" or condition == "same_actor_action_object_constraint":
+            enabled.add("duplicate_same_template")
+
+    if not enabled:
+        return {"conflict_opposite_action", "conflict_constraint_non_overlap", "duplicate_same_template"}
+
+    return enabled
+
+
 def scan_conflicts_and_duplicates() -> dict:
     with open(RULES_PATH, "r", encoding="utf-8") as file:
         rules = json.load(file)
+    enabled_rules = resolve_enabled_rules(rules)
 
     db = get_db()
     reqs = db.execute("SELECT * FROM requirements ORDER BY id").fetchall()
@@ -775,19 +795,27 @@ def scan_conflicts_and_duplicates() -> dict:
                 and (req_a["object_name"] or "").strip() != ""
             )
 
-            if same_actor_object and is_opposite_action(req_a["action"] or "", req_b["action"] or ""):
+            if (
+                "conflict_opposite_action" in enabled_rules
+                and same_actor_object
+                and is_opposite_action(req_a["action"] or "", req_b["action"] or "")
+            ):
                 create_relationship_if_missing(req_a["id"], req_b["id"], "conflicts_with")
                 key = canonical_pair(req_a["id"], req_b["id"])
                 conflict_pair_keys.add(key)
                 conflicted_ids.update([req_a["id"], req_b["id"]])
 
-            if same_actor_object and has_conflicting_constraints(req_a["constraint_text"] or "", req_b["constraint_text"] or ""):
+            if (
+                "conflict_constraint_non_overlap" in enabled_rules
+                and same_actor_object
+                and has_conflicting_constraints(req_a["constraint_text"] or "", req_b["constraint_text"] or "")
+            ):
                 create_relationship_if_missing(req_a["id"], req_b["id"], "conflicts_with")
                 key = canonical_pair(req_a["id"], req_b["id"])
                 conflict_pair_keys.add(key)
                 conflicted_ids.update([req_a["id"], req_b["id"]])
 
-            if are_duplicates(req_a, req_b):
+            if "duplicate_same_template" in enabled_rules and are_duplicates(req_a, req_b):
                 create_relationship_if_missing(req_a["id"], req_b["id"], "duplicates")
                 duplicate_pairs += 1
 

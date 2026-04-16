@@ -1,17 +1,14 @@
 [
   {
-    "rule": "conflict_if_opposite_action",
-    "condition": "same_actor_and_object_and_opposite_action",
+    "id": "conflict_opposite_action",
+    "rule": "Mâu thuẫn nếu hành động trái nghĩa",
+    "condition": "Cùng actor và object nhưng action trái nghĩa",
     "output": "conflicts_with"
   },
   {
-    "rule": "conflict_if_constraint_range_invalid",
-    "condition": "same_actor_and_object_and_non_overlapping_constraints",
-    "output": "conflicts_with"
-  },
-  {
-    "rule": "duplicate_if_same_template",
-    "condition": "same_actor_action_object_constraint",
+    "id": "duplicate_same_template",
+    "rule": "Trùng lặp nếu cùng mẫu template",
+    "condition": "Trùng actor, action, object và constraint",
     "output": "duplicates"
   }
 ]

@@ -55,6 +55,6 @@ http://127.0.0.1:5000
 ## Ghi chú
 
 - Khi mở lần đầu, app tự seed dữ liệu mẫu để UI có sẵn nội dung.
-- Conflict rule hiện tại gồm:
-  - cùng actor + object nhưng action trái nghĩa
-  - constraint mâu thuẫn, ví dụ `< 2s` và `> 5s`
+- Bộ luật demo hiện tại gồm:
+  - conflict: cùng actor + object nhưng action trái nghĩa
+  - duplicate: trùng actor + action + object + constraint

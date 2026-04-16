@@ -12,6 +12,35 @@ let typeChart;
 let priorityChart;
 let graphInstance;
 
+function showNotice(message, ok = true) {
+  const el = document.getElementById("globalNotice");
+  if (!el) return;
+  el.textContent = message;
+  el.className = ok
+    ? "mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+    : "mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700";
+  el.classList.remove("hidden");
+
+  window.clearTimeout(showNotice._timer);
+  showNotice._timer = window.setTimeout(() => {
+    el.classList.add("hidden");
+  }, 3200);
+}
+
+function setButtonLoading(button, isLoading, loadingText = "Đang xử lý...") {
+  if (!button) return;
+  if (isLoading) {
+    button.dataset.originalText = button.textContent;
+    button.disabled = true;
+    button.classList.add("opacity-70", "cursor-not-allowed");
+    button.textContent = loadingText;
+    return;
+  }
+  button.disabled = false;
+  button.classList.remove("opacity-70", "cursor-not-allowed");
+  button.textContent = button.dataset.originalText || button.textContent;
+}
+
 function setMessage(id, message, ok = true) {
   const el = document.getElementById(id);
   el.textContent = message;
@@ -27,7 +56,7 @@ async function fetchJSON(url, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || "Request failed");
   }
@@ -148,10 +177,22 @@ function requirementRow(req) {
 async function loadRequirements() {
   const type = document.getElementById("filterType").value;
   const priority = document.getElementById("filterPriority").value;
+  const keyword = document.getElementById("filterKeyword").value.trim().toLowerCase();
   const query = new URLSearchParams();
   if (type) query.set("type", type);
   if (priority) query.set("priority", priority);
-  const data = await fetchJSON(`${api.requirements}?${query.toString()}`);
+  const rawData = await fetchJSON(`${api.requirements}?${query.toString()}`);
+  const data = keyword
+    ? rawData.filter((req) => {
+      const haystack = `${req.id || ""} ${req.title || ""} ${req.description || ""}`.toLowerCase();
+      return haystack.includes(keyword);
+    })
+    : rawData;
+
+  const info = document.getElementById("filterResultInfo");
+  if (info) {
+    info.textContent = `Hiển thị ${data.length}/${rawData.length} yêu cầu`;
+  }
 
   const body = document.getElementById("requirementsBody");
   if (!data.length) {
@@ -162,11 +203,17 @@ async function loadRequirements() {
 
   body.querySelectorAll("button[data-delete]").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      const confirmDelete = confirm(`Bạn có chắc muốn xóa yêu cầu ${btn.dataset.delete}?`);
+      if (!confirmDelete) return;
       try {
+        setButtonLoading(btn, true, "Đang xóa...");
         await fetchJSON(`${api.requirements}/${btn.dataset.delete}`, { method: "DELETE" });
         await refreshAll();
+        showNotice("Đã xóa yêu cầu thành công.");
       } catch (err) {
-        alert(err.message);
+        showNotice(err.message, false);
+      } finally {
+        setButtonLoading(btn, false);
       }
     });
   });
@@ -285,29 +332,41 @@ async function refreshAll() {
 function bindEvents() {
   document.getElementById("requirementForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const submitBtn = e.target.querySelector("button[type='submit']");
     const data = formToObject(e.target);
     if (!data.id) delete data.id;
 
     try {
+      setButtonLoading(submitBtn, true, "Đang lưu...");
       await fetchJSON(api.requirements, {
         method: "POST",
         body: JSON.stringify(data),
       });
       e.target.reset();
       setMessage("requirementMessage", "Đã lưu requirement thành công.");
+      showNotice("Tạo yêu cầu mới thành công.");
       await refreshAll();
     } catch (err) {
       setMessage("requirementMessage", err.message, false);
+      showNotice(err.message, false);
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
   document.getElementById("scanConflictBtn").addEventListener("click", async () => {
+    const scanBtn = document.getElementById("scanConflictBtn");
     try {
+      setButtonLoading(scanBtn, true, "Đang quét...");
       const data = await fetchJSON(api.conflicts);
       setMessage("requirementMessage", `Đã quét xong. Xung đột: ${data.report.conflict_pairs_detected}, Trùng lặp: ${data.report.duplicate_pairs_detected}`);
+      showNotice("Đã quét xung đột và trùng lặp.");
       await refreshAll();
     } catch (err) {
       setMessage("requirementMessage", err.message, false);
+      showNotice(err.message, false);
+    } finally {
+      setButtonLoading(scanBtn, false);
     }
   });
 
@@ -315,60 +374,105 @@ function bindEvents() {
     await loadRequirements();
   });
 
+  document.getElementById("clearFilterBtn").addEventListener("click", async () => {
+    document.getElementById("filterType").value = "";
+    document.getElementById("filterPriority").value = "";
+    document.getElementById("filterKeyword").value = "";
+    await loadRequirements();
+  });
+
+  document.getElementById("filterKeyword").addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await loadRequirements();
+    }
+  });
+
   document.getElementById("relationshipForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const submitBtn = e.target.querySelector("button[type='submit']");
     const data = formToObject(e.target);
     try {
+      setButtonLoading(submitBtn, true, "Đang lưu...");
       await fetchJSON(api.relationships, {
         method: "POST",
         body: JSON.stringify(data),
       });
       e.target.reset();
       setMessage("relationshipMessage", "Đã lưu quan hệ.");
+      showNotice("Đã thêm quan hệ giữa các yêu cầu.");
       await refreshAll();
     } catch (err) {
       setMessage("relationshipMessage", err.message, false);
+      showNotice(err.message, false);
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
   document.getElementById("traceForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const submitBtn = e.target.querySelector("button[type='submit']");
     const data = formToObject(e.target);
     try {
+      setButtonLoading(submitBtn, true, "Đang lưu...");
       await fetchJSON(api.traceability, {
         method: "POST",
         body: JSON.stringify(data),
       });
       e.target.reset();
       setMessage("traceMessage", "Đã lưu liên kết truy vết.");
+      showNotice("Đã thêm liên kết truy vết.");
     } catch (err) {
       setMessage("traceMessage", err.message, false);
+      showNotice(err.message, false);
+    } finally {
+      setButtonLoading(submitBtn, false);
     }
   });
 
-  document.getElementById("traceLookupBtn").addEventListener("click", async () => {
+  const runTraceLookup = async () => {
     const id = document.getElementById("traceLookupId").value.trim();
-    if (!id) return;
+    if (!id) {
+      showNotice("Vui lòng nhập ID requirement để tra cứu.", false);
+      return;
+    }
     try {
       const data = await fetchJSON(`${api.traceability}/${id}`);
       renderTraceTree(data);
+      showNotice(`Đã tải truy vết cho ${id}.`);
     } catch (err) {
       document.getElementById("traceTree").innerHTML = `<p class='text-rose-600'>${err.message}</p>`;
+      showNotice(err.message, false);
+    }
+  };
+
+  document.getElementById("traceLookupBtn").addEventListener("click", runTraceLookup);
+  document.getElementById("traceLookupId").addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await runTraceLookup();
     }
   });
 
   document.getElementById("resetDemoBtn").addEventListener("click", async () => {
+    const resetBtn = document.getElementById("resetDemoBtn");
     try {
+      setButtonLoading(resetBtn, true, "Đang reset...");
       const data = await fetchJSON(api.resetDemo, {
         method: "POST",
       });
       setMessage("demoMessage", "Đã reset dữ liệu mẫu. Bạn có thể demo lại từ đầu.");
+      showNotice("Đã reset dữ liệu demo.");
       if (data?.message) {
         setMessage("requirementMessage", "Dữ liệu demo đã được nạp lại.");
       }
       await refreshAll();
     } catch (err) {
       setMessage("demoMessage", err.message, false);
+      showNotice(err.message, false);
+    } finally {
+      setButtonLoading(resetBtn, false);
     }
   });
 }
