@@ -323,10 +323,28 @@ function renderTraceTree(data) {
   `;
 }
 
+async function populateRequirementSelects() {
+  try {
+    const allReqs = await fetchJSON(api.requirements);
+    const options = allReqs
+      .map((req) => `<option value="${req.id}">${req.id} - ${req.title}</option>`)
+      .join("");
+
+    document.querySelectorAll("[name='from_req_id'], [name='to_req_id'], [name='requirement_id']").forEach((select) => {
+      const currentValue = select.value;
+      select.innerHTML = `<option value="">${select.value === "" ? "-- Chọn requirement --" : "-- Chọn --"}</option>${options}`;
+      if (currentValue) select.value = currentValue;
+    });
+  } catch (err) {
+    console.error("Failed to populate requirement selects:", err);
+  }
+}
+
 async function refreshAll() {
   await loadDashboard();
   await loadRequirements();
   await loadGraph();
+  await populateRequirementSelects();
 }
 
 function bindEvents() {

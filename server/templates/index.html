@@ -54,8 +54,8 @@
         </div>
       </section>
 
-      <section class="mb-6 grid gap-4 lg:grid-cols-3">
-        <form id="requirementForm" class="rounded-2xl bg-white p-4 shadow lg:col-span-2">
+      <section class="mb-6">
+        <form id="requirementForm" class="rounded-2xl bg-white p-4 shadow">
           <h2 class="mb-3 text-lg font-semibold">Nhập Yêu Cầu</h2>
           <p class="mb-3 text-sm text-slate-600">Các trường có dấu * là bắt buộc. Nếu bỏ trống ID, hệ thống sẽ tự tạo.</p>
           <div class="grid gap-3 sm:grid-cols-2">
@@ -76,9 +76,50 @@
               <option value="stakeholder">Bên liên quan</option>
               <option value="system">Hệ thống</option>
             </select>
-            <input name="actor" placeholder="Actor (không bắt buộc)" class="rounded-lg border px-3 py-2" />
-            <input name="action" placeholder="Action (không bắt buộc)" class="rounded-lg border px-3 py-2" />
-            <input name="object" placeholder="Object (không bắt buộc)" class="rounded-lg border px-3 py-2" />
+            <select name="actor" class="rounded-lg border px-3 py-2">
+              <option value="">-- Chọn Actor --</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="guest">Guest</option>
+              <option value="system">System</option>
+              <option value="api">API</option>
+              <option value="stakeholder">Stakeholder</option>
+            </select>
+            <select name="action" class="rounded-lg border px-3 py-2">
+              <option value="">-- Chọn Action --</option>
+              <option value="login">Login</option>
+              <option value="logout">Logout</option>
+              <option value="create">Create</option>
+              <option value="read">Read</option>
+              <option value="update">Update</option>
+              <option value="delete">Delete</option>
+              <option value="allow">Allow</option>
+              <option value="deny">Deny</option>
+              <option value="enable">Enable</option>
+              <option value="disable">Disable</option>
+              <option value="accept">Accept</option>
+              <option value="reject">Reject</option>
+              <option value="encrypt">Encrypt</option>
+              <option value="decrypt">Decrypt</option>
+              <option value="verify">Verify</option>
+              <option value="validate">Validate</option>
+            </select>
+            <select name="object" class="rounded-lg border px-3 py-2">
+              <option value="">-- Chọn Object --</option>
+              <option value="account">Account</option>
+              <option value="user">User</option>
+              <option value="permission">Permission</option>
+              <option value="role">Role</option>
+              <option value="password">Password</option>
+              <option value="data">Data</option>
+              <option value="database">Database</option>
+              <option value="file">File</option>
+              <option value="configuration">Configuration</option>
+              <option value="system">System</option>
+              <option value="resource">Resource</option>
+              <option value="session">Session</option>
+              <option value="token">Token</option>
+            </select>
             <input name="constraint" placeholder="Ràng buộc (không bắt buộc, vd: < 2s)" class="rounded-lg border px-3 py-2" />
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
@@ -87,33 +128,29 @@
           </div>
           <p id="requirementMessage" class="mt-2 text-sm"></p>
         </form>
-
-        <div class="rounded-2xl bg-white p-4 shadow">
-          <h2 class="mb-3 text-lg font-semibold">Bộ Lọc</h2>
-          <div class="grid gap-3">
-            <select id="filterType" class="rounded-lg border px-3 py-2">
-              <option value="">Tất cả loại</option>
-              <option value="FR">FR</option>
-              <option value="NFR">NFR</option>
-            </select>
-            <select id="filterPriority" class="rounded-lg border px-3 py-2">
-              <option value="">Tất cả mức độ</option>
-              <option value="low">Thấp</option>
-              <option value="medium">Trung bình</option>
-              <option value="high">Cao</option>
-            </select>
-            <input id="filterKeyword" placeholder="Tìm nhanh theo ID / tiêu đề" class="rounded-lg border px-3 py-2" />
-            <div class="flex gap-2">
-              <button id="applyFilterBtn" type="button" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-white">Áp dụng</button>
-              <button id="clearFilterBtn" type="button" class="w-full rounded-lg bg-slate-200 px-4 py-2">Xóa lọc</button>
-            </div>
-            <p id="filterResultInfo" class="text-xs text-slate-500"></p>
-          </div>
-        </div>
       </section>
 
       <section class="mb-6 rounded-2xl bg-white p-4 shadow">
         <h2 class="mb-3 text-lg font-semibold">Danh Sách Yêu Cầu</h2>
+        <div class="mb-4 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-4">
+          <select id="filterType" class="rounded-lg border px-3 py-2">
+            <option value="">Tất cả loại</option>
+            <option value="FR">FR</option>
+            <option value="NFR">NFR</option>
+          </select>
+          <select id="filterPriority" class="rounded-lg border px-3 py-2">
+            <option value="">Tất cả mức độ</option>
+            <option value="low">Thấp</option>
+            <option value="medium">Trung bình</option>
+            <option value="high">Cao</option>
+          </select>
+          <input id="filterKeyword" placeholder="Tìm nhanh theo ID / tiêu đề" class="rounded-lg border px-3 py-2" />
+          <div class="flex gap-2">
+            <button id="applyFilterBtn" type="button" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm text-white">Áp dụng</button>
+            <button id="clearFilterBtn" type="button" class="w-full rounded-lg bg-slate-400 px-4 py-2 text-sm">Xóa</button>
+          </div>
+        </div>
+        <p id="filterResultInfo" class="mb-3 text-xs text-slate-500"></p>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
@@ -136,8 +173,12 @@
         <form id="relationshipForm" class="rounded-2xl bg-white p-4 shadow">
           <h2 class="mb-3 text-lg font-semibold">Thêm Quan Hệ</h2>
           <div class="grid gap-3 sm:grid-cols-2">
-            <input name="from_req_id" required placeholder="ID requirement nguồn" class="rounded-lg border px-3 py-2" />
-            <input name="to_req_id" required placeholder="ID requirement đích" class="rounded-lg border px-3 py-2" />
+            <select name="from_req_id" required class="rounded-lg border px-3 py-2">
+              <option value="">-- Chọn requirement nguồn --</option>
+            </select>
+            <select name="to_req_id" required class="rounded-lg border px-3 py-2">
+              <option value="">-- Chọn requirement đích --</option>
+            </select>
             <select name="relation_type" class="rounded-lg border px-3 py-2 sm:col-span-2">
               <option value="depends_on">depends_on</option>
               <option value="conflicts_with">conflicts_with</option>
@@ -151,7 +192,9 @@
         <form id="traceForm" class="rounded-2xl bg-white p-4 shadow">
           <h2 class="mb-3 text-lg font-semibold">Thêm Truy Vết</h2>
           <div class="grid gap-3 sm:grid-cols-2">
-            <input name="requirement_id" required placeholder="ID requirement" class="rounded-lg border px-3 py-2 sm:col-span-2" />
+            <select name="requirement_id" required class="rounded-lg border px-3 py-2 sm:col-span-2">
+              <option value="">-- Chọn requirement --</option>
+            </select>
             <select name="trace_type" class="rounded-lg border px-3 py-2">
               <option value="test_case">test_case</option>
               <option value="design">design</option>
