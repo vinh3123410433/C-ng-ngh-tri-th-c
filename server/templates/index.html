@@ -130,6 +130,14 @@
         </form>
       </section>
 
+      <section id="conflictSection" class="mb-6 hidden rounded-2xl border-2 border-rose-400 bg-rose-50 p-4">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-rose-900">⚠️ Danh Sách Xung Đột Phát Hiện</h2>
+          <button type="button" onclick="document.getElementById('conflictSection').classList.add('hidden')" class="text-rose-600 hover:text-rose-900">✕</button>
+        </div>
+        <div id="conflictList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      </section>
+
       <section class="mb-6 rounded-2xl bg-white p-4 shadow">
         <h2 class="mb-3 text-lg font-semibold">Danh Sách Yêu Cầu</h2>
         <div class="mb-4 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-4">
@@ -161,6 +169,7 @@
                 <th class="px-2 py-2">Ưu tiên</th>
                 <th class="px-2 py-2">Mẫu (Actor-Action-Object-Constraint)</th>
                 <th class="px-2 py-2">Xung đột</th>
+                <th class="px-2 py-2">Trùng lặp</th>
                 <th class="px-2 py-2">Thao tác</th>
               </tr>
             </thead>

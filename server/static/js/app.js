@@ -107,6 +107,102 @@ function sourceLabel(source) {
   return source;
 }
 
+function parseDescriptionForAAO(description) {
+  if (!description) return { actor: "", action: "", object: "" };
+  
+  const text = description.trim();
+  const parts = text.split("-").map(p => p.trim());
+  
+  if (parts.length >= 3) {
+    return {
+      actor: parts[0],
+      action: parts[1],
+      object: parts[2],
+    };
+  }
+  
+  return { actor: "", action: "", object: "" };
+}
+
+function updateFieldsFromDescription() {
+  const descField = document.querySelector("[name='description']");
+  if (!descField) return;
+  
+  const parsed = parseDescriptionForAAO(descField.value);
+  
+  const actorSelect = document.querySelector("[name='actor']");
+  const actionSelect = document.querySelector("[name='action']");
+  const objectSelect = document.querySelector("[name='object']");
+  
+  if (parsed.actor && actorSelect) {
+    const actorValue = parsed.actor.toLowerCase();
+    if (Array.from(actorSelect.options).some(o => o.value === actorValue)) {
+      actorSelect.value = actorValue;
+    }
+  }
+  
+  if (parsed.action && actionSelect) {
+    const actionValue = parsed.action.toLowerCase();
+    if (Array.from(actionSelect.options).some(o => o.value === actionValue)) {
+      actionSelect.value = actionValue;
+    }
+  }
+  
+  if (parsed.object && objectSelect) {
+    const objectValue = parsed.object.toLowerCase();
+    if (Array.from(objectSelect.options).some(o => o.value === objectValue)) {
+      objectSelect.value = objectValue;
+    }
+  }
+}
+
+function renderConflictList(conflicts) {
+  const list = document.getElementById("conflictList");
+  if (!conflicts.length) {
+    list.innerHTML = "<p class='text-sm text-rose-700'>Không tìm thấy xung đột nào.</p>";
+    return;
+  }
+  
+  list.innerHTML = conflicts
+    .map(conflict => `
+      <div class="rounded-lg border border-rose-300 bg-white p-3">
+        <p class="text-sm font-medium text-slate-800">
+          <span class="font-mono text-rose-700">${conflict.from_req_id}</span>
+          <span class="text-rose-600 mx-2">↔</span>
+          <span class="font-mono text-rose-700">${conflict.to_req_id}</span>
+        </p>
+        <p class="mt-1 text-xs text-slate-600">
+          Loại: <strong>${conflict.relation_type === "conflicts_with" ? "Xung Đột" : "Trùng Lặp"}</strong>
+        </p>
+        <button 
+          type="button"
+          class="mt-2 inline-block rounded bg-rose-600 px-2 py-1 text-xs text-white hover:bg-rose-700"
+          onclick="quickAddRelationship('${conflict.from_req_id}', '${conflict.to_req_id}', '${conflict.relation_type}')"
+        >
+          Thêm Quan Hệ
+        </button>
+      </div>
+    `)
+    .join("");
+}
+
+async function quickAddRelationship(fromId, toId, type) {
+  try {
+    await fetchJSON(api.relationships, {
+      method: "POST",
+      body: JSON.stringify({
+        from_req_id: fromId,
+        to_req_id: toId,
+        relation_type: type,
+      }),
+    });
+    showNotice(`Đã thêm quan hệ: ${fromId} → ${toId}`);
+    await refreshAll();
+  } catch (err) {
+    showNotice(err.message, false);
+  }
+}
+
 function renderEmptyGraphState(message) {
   const container = document.getElementById("graph");
   if (graphInstance) {
@@ -159,14 +255,18 @@ function renderCharts(dashboard) {
 
 function requirementRow(req) {
   const template = `${req.actor || "?"} - ${req.action || "?"} - ${req.object || "?"} - ${req.constraint || "?"}`;
+  const conflictBadge = req.is_conflict ? "<span class='inline-block rounded bg-red-100 text-red-700 px-2 py-1 text-xs font-medium'>Có</span>" : "<span class='inline-block text-slate-500 text-xs'>Không</span>";
+  const duplicateBadge = req.is_duplicate ? "<span class='inline-block rounded bg-amber-100 text-amber-700 px-2 py-1 text-xs font-medium'>Có</span>" : "<span class='inline-block text-slate-500 text-xs'>Không</span>";
+  
   return `
-    <tr class="border-b">
+    <tr class="border-b ${req.is_conflict || req.is_duplicate ? 'bg-yellow-50' : ''}">
       <td class="px-2 py-2 font-mono text-xs">${req.id}</td>
       <td class="px-2 py-2">${req.title}</td>
       <td class="px-2 py-2">${req.type}</td>
       <td class="px-2 py-2">${priorityLabel(req.priority)}</td>
       <td class="px-2 py-2 text-xs">${template}</td>
-      <td class="px-2 py-2">${req.conflict_flag ? "Có" : "Không"}</td>
+      <td class="px-2 py-2">${conflictBadge}</td>
+      <td class="px-2 py-2">${duplicateBadge}</td>
       <td class="px-2 py-2">
         <button class="rounded bg-rose-600 px-2 py-1 text-xs text-white" data-delete="${req.id}">Xóa</button>
       </td>
@@ -348,6 +448,11 @@ async function refreshAll() {
 }
 
 function bindEvents() {
+  const descField = document.querySelector("[name='description']");
+  if (descField) {
+    descField.addEventListener("input", updateFieldsFromDescription);
+  }
+
   document.getElementById("requirementForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector("button[type='submit']");
@@ -377,6 +482,15 @@ function bindEvents() {
     try {
       setButtonLoading(scanBtn, true, "Đang quét...");
       const data = await fetchJSON(api.conflicts);
+      
+      const conflictSection = document.getElementById("conflictSection");
+      if (data.conflicts.length > 0) {
+        conflictSection.classList.remove("hidden");
+        renderConflictList(data.conflicts);
+      } else {
+        conflictSection.classList.add("hidden");
+      }
+      
       setMessage("requirementMessage", `Đã quét xong. Xung đột: ${data.report.conflict_pairs_detected}, Trùng lặp: ${data.report.duplicate_pairs_detected}`);
       showNotice("Đã quét xung đột và trùng lặp.");
       await refreshAll();

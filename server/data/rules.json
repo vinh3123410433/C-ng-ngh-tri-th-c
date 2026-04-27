@@ -6,6 +6,12 @@
     "output": "conflicts_with"
   },
   {
+    "id": "conflict_constraint_non_overlap",
+    "rule": "Mâu thuẫn nếu ràng buộc không chồng lấp",
+    "condition": "Cùng actor, action, object nhưng constraint không chồng lấp",
+    "output": "conflicts_with"
+  },
+  {
     "id": "duplicate_same_template",
     "rule": "Trùng lặp nếu cùng mẫu template",
     "condition": "Trùng actor, action, object và constraint",

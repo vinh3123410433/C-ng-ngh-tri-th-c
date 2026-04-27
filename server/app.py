@@ -449,10 +449,18 @@ def seed_demo_data(db: sqlite3.Connection) -> None:
         {
             "id": "REQ-LOGIN-002",
             "title": "Logout response time",
-            "description": "User - logout - system - > 5s",
+            "description": "User - logout - system - < 2s",
             "type": "FR",
             "priority": "high",
             "source": "stakeholder",
+        },
+        {
+            "id": "REQ-LOGIN-003",
+            "title": "Login response time (high load)",
+            "description": "User - login - system - > 5s",
+            "type": "FR",
+            "priority": "high",
+            "source": "user",
         },
         {
             "id": "REQ-NFR-001",
@@ -551,15 +559,15 @@ def migrate_demo_data(db: sqlite3.Connection) -> None:
             """,
             (
                 "Logout response time",
-                "User - logout - system - > 5s",
+                "User - logout - system - < 2s",
                 "FR",
                 "high",
                 "stakeholder",
                 "User",
                 "logout",
                 "system",
-                "> 5s",
-                row["id"] and now_iso(),
+                "< 2s",
+                now_iso(),
             ),
         )
         db.commit()
@@ -567,6 +575,20 @@ def migrate_demo_data(db: sqlite3.Connection) -> None:
 
 
 def row_to_requirement(row: sqlite3.Row) -> dict:
+    db = get_db()
+    req_id = row["id"]
+    
+    # Check if this requirement has duplicate or conflict relationships
+    has_duplicate = db.execute(
+        "SELECT 1 FROM relationships WHERE (from_req_id = ? OR to_req_id = ?) AND relation_type = 'duplicates' LIMIT 1",
+        (req_id, req_id)
+    ).fetchone()
+    
+    has_conflict = db.execute(
+        "SELECT 1 FROM relationships WHERE (from_req_id = ? OR to_req_id = ?) AND relation_type = 'conflicts_with' LIMIT 1",
+        (req_id, req_id)
+    ).fetchone()
+    
     return {
         "id": row["id"],
         "title": row["title"],
@@ -580,6 +602,8 @@ def row_to_requirement(row: sqlite3.Row) -> dict:
         "object": row["object_name"] or "",
         "constraint": row["constraint_text"] or "",
         "conflict_flag": bool(row["conflict_flag"]),
+        "is_duplicate": bool(has_duplicate),
+        "is_conflict": bool(has_conflict),
     }
 
 
@@ -781,43 +805,41 @@ def scan_conflicts_and_duplicates() -> dict:
     reqs = db.execute("SELECT * FROM requirements ORDER BY id").fetchall()
 
     remove_derived_relationships()
-    conflict_pairs = 0
     duplicate_pairs = 0
     conflicted_ids = set()
     conflict_pair_keys = set()
 
     for i, req_a in enumerate(reqs):
         for req_b in reqs[i + 1 :]:
-            same_actor_object = (
+            # Step 1: Check if Actor, Action, and Object are all the same
+            same_actor_action_object = (
                 (req_a["actor"] or "").strip().lower() == (req_b["actor"] or "").strip().lower()
+                and (req_a["action"] or "").strip().lower() == (req_b["action"] or "").strip().lower()
                 and (req_a["object_name"] or "").strip().lower() == (req_b["object_name"] or "").strip().lower()
                 and (req_a["actor"] or "").strip() != ""
+                and (req_a["action"] or "").strip() != ""
                 and (req_a["object_name"] or "").strip() != ""
             )
 
-            if (
-                "conflict_opposite_action" in enabled_rules
-                and same_actor_object
-                and is_opposite_action(req_a["action"] or "", req_b["action"] or "")
-            ):
-                create_relationship_if_missing(req_a["id"], req_b["id"], "conflicts_with")
-                key = canonical_pair(req_a["id"], req_b["id"])
-                conflict_pair_keys.add(key)
-                conflicted_ids.update([req_a["id"], req_b["id"]])
+            # If Actor, Action, Object are NOT all the same, skip
+            if not same_actor_action_object:
+                continue
 
+            # Step 2: If all 4 match (Actor, Action, Object, Constraint) → Duplicate
+            if "duplicate_same_template" in enabled_rules and are_duplicates(req_a, req_b):
+                create_relationship_if_missing(req_a["id"], req_b["id"], "duplicates")
+                duplicate_pairs += 1
+                continue
+
+            # Step 3: If Actor, Action, Object match BUT Constraint differs → Conflict
             if (
                 "conflict_constraint_non_overlap" in enabled_rules
-                and same_actor_object
                 and has_conflicting_constraints(req_a["constraint_text"] or "", req_b["constraint_text"] or "")
             ):
                 create_relationship_if_missing(req_a["id"], req_b["id"], "conflicts_with")
                 key = canonical_pair(req_a["id"], req_b["id"])
                 conflict_pair_keys.add(key)
                 conflicted_ids.update([req_a["id"], req_b["id"]])
-
-            if "duplicate_same_template" in enabled_rules and are_duplicates(req_a, req_b):
-                create_relationship_if_missing(req_a["id"], req_b["id"], "duplicates")
-                duplicate_pairs += 1
 
     if conflicted_ids:
         db.executemany(
